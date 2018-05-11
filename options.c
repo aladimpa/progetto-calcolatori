@@ -7,10 +7,10 @@
 void show_help(char* programname) {
   printf("%s %s %s\n%s\n%s\n%s\n%s\n",
     "Utilizzo:", programname,"[OPZIONI] ...",
-    "-op | --output-preemption <FILE>     file con i risultati dello scheduler preemptive",
-    "-on | --output-no-preemption <FILE>  file con i risultati dello scheduler non preemptive",
+    "-h  | --help                         mostra questo messaggio",
     "-i  | --input <FILE>                 file con i dati del simulatore",
-    "-h  | --help                         mostra questo messaggio"
+    "-on | --output-no-preemption <FILE>  file con i risultati dello scheduler non preemptive",
+    "-op | --output-preemption <FILE>     file con i risultati dello scheduler preemptive"
   );
   exit(0);
 }
