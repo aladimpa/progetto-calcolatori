@@ -1,2 +1,5 @@
 language: c
-script: make all
+compiler:
+  - clang
+  - gcc
+script: make all CFLAGS=-Werror -Wfatal-errors -Wall -Wextra -pedantic -D DEBUG

@@ -1,6 +1,6 @@
 # Variabili
-CC = gcc
-CFLAGS = -Werror -Wfatal-errors -Wall -Wextra -pedantic \
+CC ?= gcc
+CFLAGS ?= -Werror -Wfatal-errors -Wall -Wextra -pedantic \
 	-Og -g -ggdb -fsanitize=address -fsanitize=leak -fsanitize=undefined -pthread \
 	-D DEBUG=yes
 # CFLAGS = -O3 -pthread
