@@ -2,4 +2,6 @@ language: c
 compiler:
   - clang
   - gcc
-script: make all CFLAGS=-Werror -Wfatal-errors -Wall -Wextra -pedantic -D DEBUG
+env:
+  - CFLAGS=-Werror -Wfatal-errors -Wall -Wextra -pedantic -D DEBUG
+script: make all
