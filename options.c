@@ -1,4 +1,3 @@
-#define DEBUG
 #include <stdio.h>
 #include <unistd.h>
 #include <getopt.h>
@@ -16,11 +15,7 @@ void show_help(char* programname) {
   exit(0);
 }
 
-int main (int argc, char* argv[] ) {
-  // variabili di stato
-  char* input_filename = NULL;
-  char* output_preemption_filename = NULL;
-  char* output_no_preemption_filename = NULL;
+void parse_options(char** argv, int argc, char* input_filename, char* output_preemption_filename, char* output_no_preemption_filename) {
   // inizio impostazione di getopt
   #ifdef DEBUG
   for (int i=0; i<argc; i++)
