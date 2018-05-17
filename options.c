@@ -15,7 +15,7 @@ void show_help(char* programname) {
   exit(0);
 }
 
-void parse_options(char** argv, int argc, char* input_filename, char* output_preemption_filename, char* output_no_preemption_filename) {
+void parse_options(char** argv, int argc, char** input_filename, char** output_preemption_filename, char** output_no_preemption_filename) {
   // inizio impostazione di getopt
   #ifdef DEBUG
   for (int i=0; i<argc; i++)
@@ -42,18 +42,18 @@ void parse_options(char** argv, int argc, char* input_filename, char* output_pre
     switch (getopt_result)
     {
       case 1:
-        output_preemption_filename = optarg;
+        *output_preemption_filename = optarg;
         break;
       case 2:
-        output_no_preemption_filename = optarg;
+        *output_no_preemption_filename = optarg;
         break;
       case 'o':
         if (strlen(optarg) != 1 || optind == argc || *argv[optind] == '-')
           show_help(argv[0]);
         if (*optarg == 'p') {
-          output_preemption_filename = argv[optind];
+          *output_preemption_filename = argv[optind];
         } else if (*optarg == 'n') {
-          output_no_preemption_filename = argv[optind];
+          *output_no_preemption_filename = argv[optind];
         } else {
           show_help(argv[0]);
         }
@@ -61,7 +61,7 @@ void parse_options(char** argv, int argc, char* input_filename, char* output_pre
         break;
       case 3:
       case 'i':
-        input_filename = optarg;
+        *input_filename = optarg;
         break;
       case 4:
       case 'h':
@@ -74,15 +74,15 @@ void parse_options(char** argv, int argc, char* input_filename, char* output_pre
     }
   } while (getopt_result != -1);
   // Mostra i file selezionati
-  if (input_filename == NULL || output_preemption_filename == NULL || output_no_preemption_filename == NULL) {
+  if (*input_filename == NULL || *output_preemption_filename == NULL || *output_no_preemption_filename == NULL) {
     fprintf(stderr, "%s\n", "Non sono stati inseriti tutti i file richiesti");
     show_help(argv[0]);
   }
   #ifdef DEBUG
   printf("%s %s\n%s %s\n%s %s\n",
-    "Input:                ", input_filename,
-    "Output preemptive:    ", output_preemption_filename,
-    "Output non preemptive:", output_no_preemption_filename
+    "Input:                ", *input_filename,
+    "Output preemptive:    ", *output_preemption_filename,
+    "Output non preemptive:", *output_no_preemption_filename
   );
   #endif
 }

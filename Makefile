@@ -9,7 +9,9 @@ CFLAGS ?= -Werror -Wfatal-errors -Wall -Wextra -pedantic \
 # Target
 options.o: options.c
 	$(CC) $(CFLAGS) -c $< -o $@
-simulator: simulator.c options.o
+input.o: input.c
+	$(CC) $(CFLAGS) -c $< -o $@
+simulator: simulator.c options.o input.o
 	$(CC) $(CFLAGS) $< -o $@
 # Phony
 all: simulator
