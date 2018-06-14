@@ -5,7 +5,7 @@ CFLAGS ?= -Werror -Wfatal-errors -Wall -Wextra -pedantic \
 	-D DEBUG=yes
 # CFLAGS = -O3 -pthread
 # Definizione dei phony
-.PHONY: all clean test valgrind test1 test2 test3 test4 test5
+.PHONY: all clean valgrind test1 test2 test3 test4 test5
 # Target
 options.o: options.c
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -22,7 +22,6 @@ clean:
 	rm -f *.out
 	rm -f simulator
 	rm -f *.log
-test: valgrind
 valgrind: all
 	valgrind --error-exitcode=1 --leak-check=full ./simulator -i input_files/01_tasks.csv -on output-1-np.log -op output-1-pr.log
 	valgrind --error-exitcode=1 --leak-check=full ./simulator -i input_files/02_tasks.csv -on output-2-np.log -op output-2-pr.log
