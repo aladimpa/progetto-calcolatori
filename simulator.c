@@ -12,6 +12,5 @@ int main (int argc, char* argv[] ) {
   parse_options(argv, argc, &input_filename, &output_preemption_filename, &output_no_preemption_filename);
   // Leggi il file di input
   parse_input(simulation_data, input_filename);
-  printList(simulation_data);
   destroyList(simulation_data);
 }
