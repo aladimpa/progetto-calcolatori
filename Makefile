@@ -23,7 +23,7 @@ clean:
 	rm -f simulator
 	rm -f *.log
 test: valgrind
-valgrind:
+valgrind: all
 	valgrind --error-exitcode=1 --leak-check=full ./simulator -i input_files/01_tasks.csv -on output-1-np.log -op output-1-pr.log
 	valgrind --error-exitcode=1 --leak-check=full ./simulator -i input_files/02_tasks.csv -on output-2-np.log -op output-2-pr.log
 	valgrind --error-exitcode=1 --leak-check=full ./simulator -i input_files/03_tasks.csv -on output-3-np.log -op output-3-pr.log
