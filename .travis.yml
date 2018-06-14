@@ -4,4 +4,5 @@ compiler:
   - gcc
 env:
   - CFLAGS=-Werror -Wfatal-errors -Wall -Wextra -pedantic -D DEBUG
-script: make test
+script:
+  - make test
