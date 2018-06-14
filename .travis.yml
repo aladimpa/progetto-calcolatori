@@ -10,4 +10,4 @@ addons:
     packages:
     - valgrind
 script:
-  - make test
+  - make -d --environment-overrides test
