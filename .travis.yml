@@ -5,4 +5,9 @@ compiler:
   - gcc
 env:
   - CFLAGS=-Werror -g -ggdb -Wfatal-errors -Wall -Wextra -pedantic -D DEBUG
-script: ./travis.sh
+  - CFLAGS=-O3
+before_install:
+  - sudo apt-get update -qq
+  - sudo apt-get install --yes valgrind
+script:
+  - make test
