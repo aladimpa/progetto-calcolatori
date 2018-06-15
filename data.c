@@ -24,7 +24,8 @@ struct Instruction {
 };
 struct Task {
   int id;
-  Instruction_t* program_counter;
+  Node_t* program_counter;
+  int instruction_progress;
   int arrival_time;
   List_t* instructions;
   ProcessState_t state;
@@ -65,6 +66,7 @@ Node_t* newTaskNode(int id, int arrival_time) {
   new_node->next = NULL;
   new_node->data.t.id = id;
   new_node->data.t.arrival_time = arrival_time;
+  new_node->data.t.instruction_progress = 0;
   new_node->data.t.program_counter = NULL;
   new_node->data.t.state = NEW;
   new_node->data.t.instructions = newList();
@@ -111,7 +113,23 @@ void printNode(Node_t* node) {
     else
       printf("I-NB L: %d\n", node->data.i.length);
   } else if (node->data_type == 't') {
-    printf("Task  ID: %d T-A: %d\n", node->data.t.id, node->data.t.arrival_time);
+    switch (node->data.t.state) {
+      case NEW:
+        printf("Task  ID: %d T-A: %d NEW\n", node->data.t.id, node->data.t.arrival_time);
+        break;
+      case READY:
+        printf("Task  ID: %d T-A: %d READY\n", node->data.t.id, node->data.t.arrival_time);
+        break;
+      case RUNNING:
+        printf("Task  ID: %d T-A: %d RUN\n", node->data.t.id, node->data.t.arrival_time);
+        break;
+      case BLOCKED:
+        printf("Task  ID: %d T-A: %d BLOCKED\n", node->data.t.id, node->data.t.arrival_time);
+        break;
+      case EXIT:
+        printf("Task  ID: %d T-A: %d EXIT\n", node->data.t.id, node->data.t.arrival_time);
+        break;
+    }
     callFunctionOnList(node->data.t.instructions, &printNode);
   }
 }
@@ -148,5 +166,16 @@ void push(List_t* list, Node_t* node) {
     list->tail->next = node;
     list->tail = node;
   }
+  pthread_mutex_unlock(&list->mutex);
+}
+void pop(List_t* list) {
+  if (list == NULL || list->head == NULL)
+    return;
+  pthread_mutex_lock(&list->mutex);
+  Node_t* nodeToDelete = list->head;
+  list->head = list->head->next;
+  destroyNode(nodeToDelete);
+  if (list->head == NULL)
+    list->tail = NULL;
   pthread_mutex_unlock(&list->mutex);
 }

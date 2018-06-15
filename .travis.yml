@@ -9,10 +9,4 @@ addons:
   apt:
     packages:
     - valgrind
-script:
-  - make test1
-  - make test2
-  - make test3
-  - make test4
-  - make test5
-  - make valgrind
+script: make all
