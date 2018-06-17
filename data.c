@@ -5,6 +5,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <pthread.h>
+// Per includere due volte devo fare in modo che venga ignorato la seconda volta
+// Se non è definito data, posso includer
+#ifndef DATA
+#define DATA
 // Definizione dei tipi di dato utilizzati
 typedef enum ProcessState {
   NEW,
@@ -26,6 +30,7 @@ struct Task {
   int id;
   Node_t* program_counter;
   int instruction_progress;
+  int running_on;
   int arrival_time;
   List_t* instructions;
   ProcessState_t state;
@@ -67,6 +72,7 @@ Node_t* newTaskNode(int id, int arrival_time) {
   new_node->data.t.id = id;
   new_node->data.t.arrival_time = arrival_time;
   new_node->data.t.instruction_progress = 0;
+  new_node->data.t.running_on = 0;
   new_node->data.t.program_counter = NULL;
   new_node->data.t.state = NEW;
   new_node->data.t.instructions = newList();
@@ -85,6 +91,7 @@ Node_t* newInstructionNode(bool blocking, int length) {
   new_node->next = NULL;
   new_node->data.i.blocking = blocking;
   if (blocking) {
+    srandom(time(NULL));
     new_node->data.i.length = random() % length + 1; // Va in errore se length == 0
   } else {
     new_node->data.i.length = length;
@@ -179,3 +186,30 @@ void pop(List_t* list) {
     list->tail = NULL;
   pthread_mutex_unlock(&list->mutex);
 }
+void cancelAt(List_t* list, Node_t* node) {
+  if (list == NULL || list->head == NULL)
+    return;
+  pthread_mutex_lock(&list->mutex);
+  if (list->head == node) {
+    list->head = node->next;
+    destroyNode(node);
+    pthread_mutex_unlock(&list->mutex);
+    return;
+  }
+  Node_t* p = list->head;
+  while (p->next != NULL) {
+    if (p->next == node) {
+      Node_t* q = p->next;
+      p->next = p->next->next;
+      destroyNode(q);
+      if (p->next == NULL)
+        list->head = p;
+      pthread_mutex_unlock(&list->mutex);
+      return;
+    }
+    if (p->next != NULL)
+      p = p->next;
+  }
+  pthread_mutex_unlock(&list->mutex);
+}
+#endif
