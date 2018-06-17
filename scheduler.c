@@ -29,9 +29,9 @@ void* schedule(void* sched_info) {
   while (true) {
     if (simulation_data->head == NULL)
       break;
+    pthread_mutex_lock(((SchedulerInfo_t*) sched_info)->simulation_data_mutex);
     Node_t* current_node = simulation_data->head;
     bool executing_blocking = false;
-    pthread_mutex_lock(((SchedulerInfo_t*) sched_info)->simulation_data_mutex);
     while(current_node != NULL) {
       if (clock < current_node->data.t.arrival_time) {
         current_node = current_node->next;
