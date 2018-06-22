@@ -2,8 +2,8 @@
 CC ?= gcc
 CFLAGS ?= -Werror -Wfatal-errors -Wall -Wextra -pedantic \
 	-Og -g -ggdb -pthread \
-	-D DEBUG=yes
-# -fsanitize=address -fsanitize=leak -fsanitize=undefined
+	-D DEBUG=
+#	-fsanitize=address -fsanitize=leak -fsanitize=undefined
 # CFLAGS = -O3 -pthread
 VALGRIND_OPTS = --read-var-info=yes \
 	--error-exitcode=1 \
@@ -32,8 +32,8 @@ clean:
 	rm -f *.log
 	rm -f vgcore.*
 valgrind: all
-	# valgrind --tool=memcheck $(VALGRIND_OPTS) --leak-check=full --track-origins=yes ./simulator -i input_files/01_tasks.csv -on output-1-np.log -op output-1-pr.log
-	valgrind --tool=helgrind $(VALGRIND_OPTS) --free-is-write=yes ./simulator -i input_files/01_tasks.csv -on output-1-np.log -op output-1-pr.log
+	valgrind --tool=memcheck $(VALGRIND_OPTS) --leak-check=full --track-origins=yes ./simulator -i input_files/01_tasks.csv -on output-1-np.log -op output-1-pr.log
+	# valgrind --tool=helgrind $(VALGRIND_OPTS) --free-is-write=yes ./simulator -i input_files/01_tasks.csv -on output-1-np.log -op output-1-pr.log
 test1: all
 	./simulator -i input_files/01_tasks.csv -on output-1-np.log -op output-1-pr.log
 test2: all

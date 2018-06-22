@@ -24,13 +24,13 @@ int main (int argc, char* argv[] ) {
   char* output_preemption_filename = NULL;
   char* output_no_preemption_filename = NULL;
   List_t* simulation_data = newList();
+  on_exit(&destroyListOnExit, simulation_data);
   // Leggi le opzioni da riga di comando
   parse_options(argv, argc, &input_filename, &output_preemption_filename, &output_no_preemption_filename);
   // Leggi il file di input
   parse_input(simulation_data, input_filename);
   // Effettua la simulazione
   schedulate(simulation_data);
-  destroyList(simulation_data);
   // Il processo padre attende il figlio
   // if (pid != 0)
   //   waitpid(pid, NULL, 0);

@@ -15,7 +15,7 @@
         "-op",
         "output-preempt",
         "-i",
-        "input"
+        "input_files/01_tasks.csv"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",

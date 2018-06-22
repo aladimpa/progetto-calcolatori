@@ -9,6 +9,9 @@
 // Se non è definito data, posso includer
 #ifndef DATA
 #define DATA
+
+#define PRINT_TASKS 1
+#define PRINT_INSTRUCTIONS 0
 // Definizione dei tipi di dato utilizzati
 typedef enum ProcessState {
   NEW,
@@ -101,7 +104,6 @@ Node_t* newInstructionNode(bool blocking, int length) {
 void callFunctionOnList(List_t* list, void (*function)(Node_t*)) {
   if (list->head == NULL)
     return;
-  pthread_mutex_lock(&list->mutex);
   Node_t* p = list->head;
   Node_t* q = NULL;
   while(p != NULL) {
@@ -109,17 +111,20 @@ void callFunctionOnList(List_t* list, void (*function)(Node_t*)) {
     function(p);
     p = q;
   }
-  pthread_mutex_unlock(&list->mutex);
 }
 void printNode(Node_t* node) {
   if (node == NULL)
     return;
+  #if PRINT_INSTRUCTIONS
   if (node->data_type == 'i') {
     if (node->data.i.blocking)
       printf("I-B  L: %d\n", node->data.i.length);
     else
       printf("I-NB L: %d\n", node->data.i.length);
-  } else if (node->data_type == 't') {
+  }
+  #endif
+  #if PRINT_TASKS
+  if (node->data_type == 't') {
     switch (node->data.t.state) {
       case NEW:
         printf("Task  ID: %d T-A: %d NEW\n", node->data.t.id, node->data.t.arrival_time);
@@ -139,6 +144,7 @@ void printNode(Node_t* node) {
     }
     callFunctionOnList(node->data.t.instructions, &printNode);
   }
+  #endif
 }
 void printList(List_t* list) {
   callFunctionOnList(list, &printNode);
@@ -162,54 +168,60 @@ void destroyList(List_t* list) {
   pthread_mutex_destroy(&list->mutex);
   free(list);
 }
+void destroyListOnExit(int status, void* list) { // Wrapper per destroyList e usarla da on_exit
+  if (status != 0)
+    fprintf(stderr, "%s\n", "Programma terminato con errore, pulizia lista in corso");
+  destroyList((List_t*) list);
+}
+void destroyListFromThread(void* list) { // Wrapper per destroyList e usarla da pthread_cleanup_push
+  destroyList((List_t*) list);
+}
 void push(List_t* list, Node_t* node) {
   if (list == NULL || node == NULL)
     return;
-  pthread_mutex_lock(&list->mutex);
+  node->next = NULL;
+  // Lista vuota
   if (list->head == NULL) {
     list->head = node;
     list->tail = node;
-  } else {
-    list->tail->next = node;
-    list->tail = node;
-  }
-  pthread_mutex_unlock(&list->mutex);
-}
-void pop(List_t* list) {
-  if (list == NULL || list->head == NULL)
     return;
-  pthread_mutex_lock(&list->mutex);
-  Node_t* nodeToDelete = list->head;
-  list->head = list->head->next;
-  destroyNode(nodeToDelete);
-  if (list->head == NULL)
-    list->tail = NULL;
-  pthread_mutex_unlock(&list->mutex);
+  }
+  // Lista non vuota
+  list->tail->next = node;
+  list->tail = node;
+}
+Node_t* popAt(List_t* list, Node_t* node) {
+  if (list == NULL || list->head == NULL)
+    return NULL;
+  // Variabili
+  Node_t* current_node = list->head;
+  Node_t* popped_node = NULL;
+  // Controllo se il nodo cercato é in testa
+  if (node == current_node) {
+    popped_node = list->head;
+    list->head = list->head->next;
+    if (list->head == NULL)
+      list->tail = NULL;
+    return popped_node;
+  }
+  // Cerco il nodo nella lista
+  while (current_node != NULL) {
+    if (current_node->next == node) {
+      popped_node = current_node->next;
+      if (popped_node != NULL)
+        current_node->next = popped_node->next;
+      else
+        current_node->next = NULL;
+      break; // Esco dal while
+    }
+    current_node = current_node->next;
+  }
+  if (list->head != NULL && list->head->next == NULL)
+    list->tail = list->head;
+  popped_node->next = NULL;
+  return popped_node;
 }
 void cancelAt(List_t* list, Node_t* node) {
-  if (list == NULL || list->head == NULL)
-    return;
-  pthread_mutex_lock(&list->mutex);
-  if (list->head == node) {
-    list->head = node->next;
-    destroyNode(node);
-    pthread_mutex_unlock(&list->mutex);
-    return;
-  }
-  Node_t* p = list->head;
-  while (p->next != NULL) {
-    if (p->next == node) {
-      Node_t* q = p->next;
-      p->next = p->next->next;
-      destroyNode(q);
-      if (p->next == NULL)
-        list->head = p;
-      pthread_mutex_unlock(&list->mutex);
-      return;
-    }
-    if (p->next != NULL)
-      p = p->next;
-  }
-  pthread_mutex_unlock(&list->mutex);
+  destroyNode(popAt(list, node));
 }
 #endif
