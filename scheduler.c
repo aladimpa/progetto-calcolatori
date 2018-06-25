@@ -2,9 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <math.h>
 
 #define CORE_COUNT 2
-#define TIME_SLICE 25
 
 typedef enum SchedulerType {
   PREEMPTIVE,
@@ -16,6 +16,7 @@ typedef struct SchedulerInfo {
   SchedulerType_t scheduler_type;
   List_t* simulation_data;
   FILE* output_file;
+  int TIME_SLICE;
 } SchedulerInfo_t;
 
 typedef enum SchedulingAlgorithm {
@@ -161,6 +162,7 @@ void* schedule(void* sched_info) {
           currentlyExecuting = NULL;
         } else if (scheduler_type == PREEMPTIVE) {
           // RUNNING nel caso PREEMPTIVE
+          int TIME_SLICE = ((SchedulerInfo_t*) sched_info)->TIME_SLICE;
           if ((currentlyExecuting->data.t.running_since + TIME_SLICE) <= clock) {
             statusUpdate(coreNumber, clock, currentlyExecuting, READY, output_file);
             push(readyQueue, currentlyExecuting);
@@ -221,6 +223,35 @@ void* schedule(void* sched_info) {
 
 void schedulate(List_t* simulation_data, char* filename, SchedulerType_t scheduler_type)
 {
+  // Calcolo lunghezza media blocchi istruzioni NB
+  int TIME_SLICE;
+  if (scheduler_type == PREEMPTIVE) {
+    Node_t* current_task = simulation_data->head;
+    unsigned int sum = 0.0;
+    unsigned int total = 0;
+    while (current_task != NULL) {
+      Node_t* current_instruction = current_task->data.t.instructions->head;
+      bool inBlock = false;
+      while (current_instruction != NULL) {
+        if (current_instruction->data.i.blocking) {
+          if (inBlock) {
+            inBlock = false;
+            total++;
+          }
+        } else {
+          inBlock = true;
+          sum += current_instruction->data.i.length;
+        }
+        current_instruction = current_instruction->next;
+      }
+      current_task = current_task->next;
+    }
+    #ifdef DEBUG
+    printf("%i / %i = %f\n", sum, total, sum * 0.8 / total);
+    printf("%i / %i = %i\n", sum, total, (int) ceil(sum * 0.8 / total));
+    #endif
+    TIME_SLICE = (int) ceil(sum * 0.8 / total);
+  }
   // Apertura del file di output
   FILE* output_file = fopen(filename, "w");
   if (output_file == NULL) {
@@ -237,6 +268,7 @@ void schedulate(List_t* simulation_data, char* filename, SchedulerType_t schedul
     thread_data[i].scheduler_type = scheduler_type;
     thread_data[i].simulation_data = simulation_data;
     thread_data[i].output_file = output_file;
+    thread_data[i].TIME_SLICE = TIME_SLICE;
     // Lancio dei thread
     if (pthread_create(&threads[i], NULL, &schedule, &thread_data[i]) != 0) {
       fprintf(stderr,"%s\n","Non sono riuscito a creare un thread");
