@@ -33,8 +33,8 @@ struct Task {
   int id;
   Node_t* program_counter;
   int instruction_progress;
-  int running_on;
   int arrival_time;
+  int running_since;
   List_t* instructions;
   ProcessState_t state;
 };
@@ -75,7 +75,7 @@ Node_t* newTaskNode(int id, int arrival_time) {
   new_node->data.t.id = id;
   new_node->data.t.arrival_time = arrival_time;
   new_node->data.t.instruction_progress = 0;
-  new_node->data.t.running_on = 0;
+  new_node->data.t.running_since = 0;
   new_node->data.t.program_counter = NULL;
   new_node->data.t.state = NEW;
   new_node->data.t.instructions = newList();
@@ -191,37 +191,37 @@ void push(List_t* list, Node_t* node) {
   list->tail = node;
 }
 Node_t* popAt(List_t* list, Node_t* node) {
-  if (list == NULL || list->head == NULL)
+  if (list == NULL || list->head == NULL || node == NULL)
     return NULL;
-  // Variabili
-  Node_t* current_node = list->head;
-  Node_t* popped_node = NULL;
-  // Controllo se il nodo cercato é in testa
-  if (node == current_node) {
-    popped_node = list->head;
+  // Node è il primo elemento
+  if (list->head == node) {
+    Node_t* popped_node = list->head;
     list->head = list->head->next;
-    if (list->head == NULL)
+    // Ho rimosso l'unico nodo
+    if (list->head == NULL) {
       list->tail = NULL;
+    }
     return popped_node;
   }
-  // Cerco il nodo nella lista
+  // Node è nella lista
+  Node_t* current_node = list->head;
   while (current_node != NULL) {
     if (current_node->next == node) {
-      popped_node = current_node->next;
-      if (popped_node != NULL)
-        current_node->next = popped_node->next;
-      else
-        current_node->next = NULL;
-      break; // Esco dal while
+      Node_t* popped_node = current_node->next;
+      current_node->next = current_node->next->next;
+      if (current_node->next == NULL)
+        list->tail = current_node;
+      return popped_node;
     }
     current_node = current_node->next;
   }
-  if (list->head != NULL && list->head->next == NULL)
-    list->tail = list->head;
-  popped_node->next = NULL;
-  return popped_node;
+  // Ritorno NULL se non ho trovato il nodo
+  return NULL;
 }
 void cancelAt(List_t* list, Node_t* node) {
   destroyNode(popAt(list, node));
+}
+void closeFile(void* file_handle) {
+  fclose((FILE*) file_handle);
 }
 #endif

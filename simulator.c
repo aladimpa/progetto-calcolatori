@@ -8,17 +8,17 @@
 #include "scheduler.c"
 int main (int argc, char* argv[] ) {
   // Fork
-  // pid_t pid = fork();
-  // if (pid == -1) {
-  //   printf("%s\n","Fork fallita");
-  //   exit(1);
-  // }
-  // #ifdef DEBUG
-  // if (pid == 0)
-  //   printf("Sono il figlio\n");
-  // else
-  //   printf("Sono il padre\n");
-  // #endif
+  pid_t pid = fork();
+  if (pid == -1) {
+    printf("%s\n","Fork fallita");
+    exit(1);
+  }
+  #ifdef DEBUG
+  if (pid == 0)
+    printf("Sono il figlio\n");
+  else
+    printf("Sono il padre\n");
+  #endif
   // variabili di stato
   char* input_filename = NULL;
   char* output_preemption_filename = NULL;
@@ -30,8 +30,11 @@ int main (int argc, char* argv[] ) {
   // Leggi il file di input
   parse_input(simulation_data, input_filename);
   // Effettua la simulazione
-  schedulate(simulation_data);
+  if (pid == 0)
+    schedulate(simulation_data, output_preemption_filename, PREEMPTIVE);
+  else
+    schedulate(simulation_data, output_no_preemption_filename, NONPREEMPTIVE);
   // Il processo padre attende il figlio
-  // if (pid != 0)
-  //   waitpid(pid, NULL, 0);
+  if (pid != 0)
+    waitpid(pid, NULL, 0);
 }

@@ -1,6 +1,7 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #include "data.c"
 void parse_input(List_t* list, char* filename) {
   // Apri il file in ingresso
@@ -9,6 +10,7 @@ void parse_input(List_t* list, char* filename) {
     perror("Errore nell'apertura del file");
     exit(1);
   }
+  pthread_cleanup_push(closeFile, input_file);
   // Leggiamo il file
   char tipo;
   int parametro_1, parametro_2, match;
@@ -58,5 +60,5 @@ void parse_input(List_t* list, char* filename) {
   if (current_task != NULL)
     push(list, current_task);
   // Chiudiamo il file
-  fclose(input_file);
+  pthread_cleanup_pop(1);
 }

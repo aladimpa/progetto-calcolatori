@@ -3,7 +3,8 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#define CORE_COUNT 1
+#define CORE_COUNT 2
+#define TIME_SLICE 25
 
 typedef enum SchedulerType {
   PREEMPTIVE,
@@ -14,37 +15,92 @@ typedef struct SchedulerInfo {
   int coreNumber;
   SchedulerType_t scheduler_type;
   List_t* simulation_data;
+  FILE* output_file;
 } SchedulerInfo_t;
 
-void statusUpdate(int core, int clock, Node_t* task, ProcessState_t state) {
+typedef enum SchedulingAlgorithm {
+  FCFS,
+  SPN
+} SchedulingAlgorithm_t;
+
+void statusUpdate(int core, int clock, Node_t* task, ProcessState_t state, FILE* output_file) {
   task->data.t.state = state;
+  // output_file = stdout;
   switch (state)
   {
     case NEW:
-      printf("core%d,%d,%d,%s\n", core, clock, task->data.t.id, "new");
+      fprintf(output_file, "core%d,%d,%d,%s\n", core, clock, task->data.t.id, "new");
       break;
     case READY:
-      printf("core%d,%d,%d,%s\n", core, clock, task->data.t.id, "ready");
+      fprintf(output_file, "core%d,%d,%d,%s\n", core, clock, task->data.t.id, "ready");
       break;
     case RUNNING:
-      printf("core%d,%d,%d,%s\n", core, clock, task->data.t.id, "run");
+      fprintf(output_file, "core%d,%d,%d,%s\n", core, clock, task->data.t.id, "run");
       break;
     case BLOCKED:
-      printf("core%d,%d,%d,%s\n", core, clock, task->data.t.id, "blocked");
+      fprintf(output_file, "core%d,%d,%d,%s\n", core, clock, task->data.t.id, "blocked");
       break;
     case EXIT:
-      printf("core%d,%d,%d,%s\n", core, clock, task->data.t.id, "exit");
+      fprintf(output_file, "core%d,%d,%d,%s\n", core, clock, task->data.t.id, "exit");
       break;
     default:
       break;
   }
 }
 
+Node_t* chooseNode(List_t* readyQueue, SchedulingAlgorithm_t algorithm, Node_t* preempted) {
+  // FCFS
+  if (algorithm == FCFS) {
+    Node_t* current_node = readyQueue->head;
+    Node_t* choosen_node = readyQueue->head;
+    while (current_node != NULL) {
+      if (preempted != NULL && preempted == current_node) {
+        current_node = current_node->next;
+        continue;
+      }
+      if (current_node->data.t.arrival_time < choosen_node->data.t.arrival_time)
+        choosen_node = current_node;
+      current_node = current_node->next;
+    }
+    return choosen_node;
+  }
+  // SPN
+  if (algorithm == SPN) {
+    Node_t* current_node = readyQueue->head;
+    Node_t* choosen_node = NULL;
+    int choosen_node_duration = 0;
+    while (current_node != NULL) {
+      if (preempted != NULL && preempted == current_node) {
+        current_node = current_node->next;
+        continue;
+      }
+      // Calcolo della durata
+      int current_node_duration = 0;
+      Node_t* current_instruction = current_node->data.t.instructions->head;
+      while (current_instruction != NULL) {
+        current_node_duration += current_instruction->data.i.length;
+        current_instruction = current_instruction->next;
+      }
+      if (choosen_node == NULL || current_node_duration < choosen_node_duration) {
+        choosen_node = current_node;
+        choosen_node_duration = current_node_duration;
+      }
+      current_node = current_node->next;
+    }
+    return choosen_node;
+  }
+  // Ignoriamo i task preempted
+  preempted = NULL;
+  // Impossibile ma altrimenti GCC si altera
+  return NULL;
+}
+
 void* schedule(void* sched_info) {
   // Prendo i parametri dello scheduler
   int coreNumber = ((SchedulerInfo_t*) sched_info)->coreNumber;
-  // SchedulerType_t scheduler_type = ((SchedulerInfo_t*) sched_info)->scheduler_type;
+  SchedulerType_t scheduler_type = ((SchedulerInfo_t*) sched_info)->scheduler_type;
   List_t* simulation_data = ((SchedulerInfo_t*) sched_info)->simulation_data;
+  FILE* output_file = ((SchedulerInfo_t*) sched_info)->output_file;
   // Variabili di stato
   List_t* readyQueue = newList();
   pthread_cleanup_push(destroyListFromThread, readyQueue); // "Distruttore" lista READY
@@ -53,15 +109,16 @@ void* schedule(void* sched_info) {
   bool terminate = false;
   int clock = 1;
   Node_t* currentlyExecuting = NULL;
+  Node_t* preempted = NULL;
   while (!terminate) {
     // Creazione NEW
     pthread_mutex_lock(&simulation_data->mutex); // Inizio della sezione critica
     Node_t* newTask = simulation_data->head;
     while (newTask != NULL) {
       if (clock >= newTask->data.t.arrival_time) {
-        statusUpdate(coreNumber, clock, newTask, NEW);
+        statusUpdate(coreNumber, clock, newTask, NEW, output_file);
         newTask->data.t.program_counter = newTask->data.t.instructions->head;
-        statusUpdate(coreNumber, clock, newTask, READY);
+        statusUpdate(coreNumber, clock, newTask, READY, output_file);
         push(readyQueue, popAt(simulation_data, newTask));
       } else {
         break;
@@ -69,16 +126,21 @@ void* schedule(void* sched_info) {
       newTask = newTask->next;
     }
     pthread_mutex_unlock(&simulation_data->mutex); // Fine della sezione critica
+    // Scelta del task
     if (currentlyExecuting == NULL && readyQueue->head != NULL) {
-      readyQueue->head->data.t.instruction_progress = clock;
-      if (readyQueue->head->data.t.program_counter->data.i.blocking) {
+      Node_t* choosenNode = chooseNode(readyQueue, FCFS, preempted);
+      choosenNode->data.t.instruction_progress = clock;
+      if (choosenNode->data.t.program_counter->data.i.blocking) {
         // READY -> BLOCKED
-        statusUpdate(coreNumber, clock, readyQueue->head, BLOCKED);
-        push(blockedQueue, popAt(readyQueue, readyQueue->head));
+        statusUpdate(coreNumber, clock, choosenNode, BLOCKED, output_file);
+        push(blockedQueue, popAt(readyQueue, choosenNode));
       } else {
         // READY -> RUNNING
-        statusUpdate(coreNumber, clock, readyQueue->head, RUNNING);
-        currentlyExecuting = popAt(readyQueue, readyQueue->head);
+        statusUpdate(coreNumber, clock, choosenNode, RUNNING, output_file);
+        currentlyExecuting = popAt(readyQueue, choosenNode);
+        if (scheduler_type == PREEMPTIVE) {
+          currentlyExecuting->data.t.running_since = clock;
+        }
       }
     }
     // RUNNING
@@ -89,14 +151,25 @@ void* schedule(void* sched_info) {
         currentlyExecuting->data.t.instruction_progress = clock;
         if (currentlyExecuting->data.t.program_counter == NULL) {
           // Passo in EXIT se ho finito
-          statusUpdate(coreNumber, clock, currentlyExecuting, EXIT);
+          statusUpdate(coreNumber, clock, currentlyExecuting, EXIT, output_file);
           destroyNode(currentlyExecuting);
           currentlyExecuting = NULL;
         } else if (currentlyExecuting->data.t.program_counter->data.i.blocking) {
           // Passo in BLOCKED se incontro una bloccante
-          statusUpdate(coreNumber, clock, currentlyExecuting, BLOCKED);
+          statusUpdate(coreNumber, clock, currentlyExecuting, BLOCKED, output_file);
           push(blockedQueue, currentlyExecuting);
           currentlyExecuting = NULL;
+        } else if (scheduler_type == PREEMPTIVE) {
+          // RUNNING nel caso PREEMPTIVE
+          if ((currentlyExecuting->data.t.running_since + TIME_SLICE) <= clock) {
+            statusUpdate(coreNumber, clock, currentlyExecuting, READY, output_file);
+            push(readyQueue, currentlyExecuting);
+            preempted = currentlyExecuting;
+            currentlyExecuting = NULL;
+            #ifdef DEBUG
+            fprintf(output_file, "  PREEMPT\n");
+            #endif
+          }
         }
       }
     }
@@ -108,12 +181,21 @@ void* schedule(void* sched_info) {
         blockedTask->data.t.program_counter = blockedTask->data.t.program_counter->next;
         blockedTask->data.t.instruction_progress = clock;
         if (blockedTask->data.t.program_counter == NULL) {
-          statusUpdate(coreNumber, clock, blockedTask, EXIT);
+          // Passo in EXIT se ho finito
+          /*
+            Q: Supponiamo che un task abbia un'istruzione bloccante come ultima istruzione. Una volta aspettato che si sblocchi, possiamo direttamente mandarlo in "exit"?
+            A: No, bisogna loggare e scrivere sul file output che il task, seppur terminato, deve prima passare allo stato "ready" e allo stato "running"
+          */
+          statusUpdate(coreNumber, clock, blockedTask, READY, output_file);
+          statusUpdate(coreNumber, clock, blockedTask, RUNNING, output_file);
+          statusUpdate(coreNumber, clock, blockedTask, EXIT, output_file);
           cancelAt(blockedQueue, blockedTask);
         } else {
-          statusUpdate(coreNumber, clock, blockedTask, READY);
+          // Passo in READY
+          statusUpdate(coreNumber, clock, blockedTask, READY, output_file);
           push(readyQueue, popAt(blockedQueue, blockedTask));
         }
+        nextBlockedTask = blockedQueue->head;
       }
       blockedTask = nextBlockedTask;
     }
@@ -137,16 +219,24 @@ void* schedule(void* sched_info) {
   pthread_exit(NULL);
 }
 
-void schedulate(List_t* simulation_data)
+void schedulate(List_t* simulation_data, char* filename, SchedulerType_t scheduler_type)
 {
+  // Apertura del file di output
+  FILE* output_file = fopen(filename, "w");
+  if (output_file == NULL) {
+    perror("Errore nell'apertura del file");
+    exit(1);
+  }
+  pthread_cleanup_push(closeFile, output_file);
   // Lancio dei thread
   pthread_t threads[CORE_COUNT];
   SchedulerInfo_t thread_data[CORE_COUNT];
   for (int i = 0; i < CORE_COUNT; i++) {
     // Creazione parametri per il thread
     thread_data[i].coreNumber = i;
-    thread_data[i].scheduler_type = NONPREEMPTIVE;
+    thread_data[i].scheduler_type = scheduler_type;
     thread_data[i].simulation_data = simulation_data;
+    thread_data[i].output_file = output_file;
     // Lancio dei thread
     if (pthread_create(&threads[i], NULL, &schedule, &thread_data[i]) != 0) {
       fprintf(stderr,"%s\n","Non sono riuscito a creare un thread");
@@ -157,4 +247,6 @@ void schedulate(List_t* simulation_data)
   for (int i = 0; i < CORE_COUNT; i++) {
     pthread_join(threads[i], NULL);
   }
+  // Chiusura dei file
+  pthread_cleanup_pop(1);
 }
