@@ -1,7 +1,7 @@
 # Variabili
 CC ?= gcc
-# CFLAGS ?= -Werror -Wfatal-errors -Wall -Wextra -pedantic -Og -g -ggdb -pthread -D DEBUG= -fsanitize=address -fsanitize=leak -fsanitize=undefined
-CFLAGS = -O3 -pthread
+# CFLAGS ?= -std=c99 -Werror -Wfatal-errors -Wall -Wextra -pedantic -Og -g -ggdb -pthread -D DEBUG= -fsanitize=address -fsanitize=leak -fsanitize=undefined
+CFLAGS = -O3 -std=c99 -pthread
 VALGRIND_OPTS = --read-var-info=yes \
 	--error-exitcode=1 \
 	--read-var-info=yes \
