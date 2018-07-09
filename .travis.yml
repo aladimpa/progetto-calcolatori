@@ -3,8 +3,8 @@ compiler:
   - clang
   - gcc
 env:
-  - CFLAGS=-Werror -g -ggdb -Wfatal-errors -Wall -Wextra -pedantic -D DEBUG
-  - CFLAGS=-O3
+  - CFLAGS=-std=gnu99 -Werror -g -ggdb -Wfatal-errors -Wall -Wextra -pedantic -D DEBUG
+  - CFLAGS=-std=gnu99 -O3
 script:
   - make all
   - make test
