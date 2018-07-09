@@ -2,9 +2,6 @@ language: c
 compiler:
   - clang
   - gcc
-env:
-  - CFLAGS=-std=gnu99 -Werror -g -ggdb -Wfatal-errors -Wall -Wextra -pedantic -D DEBUG -pthread
-  - CFLAGS=-std=gnu99 -O3 -pthread
 script:
   - make all
   - make test
