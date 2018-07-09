@@ -11,15 +11,15 @@ VALGRIND_OPTS = --read-var-info=yes \
 .PHONY: all clean test test1 test2 test3 test4 test5
 # Target
 options.o: options.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ -lm
 data.o: data.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ -lm
 input.o: input.c data.o
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ -lm
 scheduler.o: scheduler.c data.o
 	$(CC) $(CFLAGS) -c $< -o $@ -lm
 simulator: simulator.c options.o input.o data.o scheduler.o
-	$(CC) $(CFLAGS) $< -o $@
+	$(CC) $(CFLAGS) $< -o $@ -lm
 # Phony
 all: simulator
 clean:
