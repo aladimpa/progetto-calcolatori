@@ -1,7 +1,7 @@
 # Variabili
 CC ?= gcc
 # CFLAGS ?= -std=gnu99 -Werror -Wfatal-errors -Wall -Wextra -pedantic -Og -g -ggdb -pthread -D DEBUG= -fsanitize=address -fsanitize=leak -fsanitize=undefined
-CFLAGS ?= -O3 -std=gnu99 -pthread -lm
+CFLAGS ?= -O3 -std=gnu99 -pthread
 VALGRIND_OPTS = --read-var-info=yes \
 	--error-exitcode=1 \
 	--read-var-info=yes \
@@ -17,7 +17,7 @@ data.o: data.c
 input.o: input.c data.o
 	$(CC) $(CFLAGS) -c $< -o $@
 scheduler.o: scheduler.c data.o
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ -lm
 simulator: simulator.c options.o input.o data.o scheduler.o
 	$(CC) $(CFLAGS) $< -o $@
 # Phony
