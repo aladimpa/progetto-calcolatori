@@ -1,4 +1,4 @@
-﻿Per la realizzazione del progetto abbiamo deciso di utilizzare tre liste singolarmente concatenate con inserimento in fondo e rimozione con ricerca.
+Per la realizzazione del progetto abbiamo deciso di utilizzare tre liste singolarmente concatenate con inserimento in fondo e rimozione con ricerca.
 Due di queste liste, la lista "READY" e la lista "BLOCKED", sono locali al thread relativo a un core dello scheduler; mentre la lista dei processi in stato NEW é globale.
 Abbiamo deciso di utilizzare questa variante della struttura dati per poter gestire al meglio le cinque fasi del processo,
 considerato che un singolo core puó eseguire al piú un processo e che una volta registrato il passaggio allo stato "EXIT" non é piú necessario tenere traccia del task, 
@@ -11,14 +11,14 @@ Dopo una istruzione bloccante o la preemption é stato deciso di esaurire un cic
 Come algoritmo di scheduling per il caso non preemptive, dopo opportune analisi, siamo giunti alla conclusione che l'unico algoritmo di scelta, seppur semplice, in grado di portare a termine la simulazione in un tempo ragionevole, é stato l'FCFS.
 Nel codice si possono trovare menzioni all'SPN, che nonostante i vantaggi teorici, portava il simulatore a dover effettuare troppi calcoli, esaurendo il tempo a disposizione.
 
-Come algoritmo di scheduling preemptive, é stato implementata una strategia Round Robin utilizzante la logica relativa all'algoritmo FCFS per la selezione del processo successivo.
+Come algoritmo di scheduling preemptive, é stata implementata una strategia Round Robin utilizzante la logica relativa all'algoritmo FCFS per la selezione del processo successivo.
 Il quanto di tempo viene calcolato dinamicamente, approfittando della disponibilitá della traccia dei task.
 Questo calcolo imposta il quanto di tempo all'intero superiore dell'80% della media tra le somme delle durate di esecuzione dei gruppi di istruzioni non bloccanti contigue.
 Sono state escluse dal calcolo le istruzioni bloccanti perché a loro volta rappresentano una rischedulazione.
 Il coefficiente 80% é stato scelto perché dopo alcune ricerche si é rivelato essere il miglior compromesso.
 
 Confrontando gli approcci, é risultato che lo scheduler con preemption porta ad un incremento del tempo totale di esecuzione di circa il 12%.
-I processi lunghi e costituiti per la maggior parte da istruzioni non bloccanti traggono beneficio dello scheduling non preemptive, avendo la possibilitá di esaurire la loro computazione indisturbati, al contrario dello scheduler preemptive che "rompe" queste lunghe esecuzioni, permettendo agli altri task di procedere, un approccio piú "fair".
+I processi lunghi e costituiti per la maggior parte da istruzioni non bloccanti traggono beneficio dello scheduling non preemptive, avendo la possibilitá di esaurire la loro computazione indisturbati, al contrario dello scheduler preemptive che "rompe" queste lunghe esecuzioni, permettendo agli altri task di procedere rivelandosi quindi come un approccio piú "fair".
 Tuttavia lo scheduler non preemptive presenta il fenomeno della starvation: se dei processi sono preceduti da una lunga serie di istruzioni non bloccanti, si assiste infatti a una dilatazione dei tempi per il primo dispacciamento.
 
 Lanciando la simulazione completa cinque volte con le ottimizzazioni attive (compilatore GCC 8.1.1) su un processore 8 core a 4 GHz (AMD FX-9590) su Fedora 28, il tempo di esecuzione é stato in media di 4,6944 secondi.
